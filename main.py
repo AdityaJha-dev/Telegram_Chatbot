@@ -4,36 +4,39 @@ import logging
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from openai import OpenAI
+import openai
 
 # --- Setup ---
-# Load environment variables from .env file
 load_dotenv()
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Initialize OpenAI client (v1.x syntax)
-# It automatically uses the OPENAI_API_KEY from your .env file
-client = OpenAI()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Get Telegram token
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # --- In-memory storage for conversation history ---
-# Using a dictionary to store history for each user separately
 user_history = {}
 model_name = "gpt-3.5-turbo"
 
-# --- Dispatcher and Bot Initialization ---
+SYSTEM_PROMPT = (
+    "You are 'Agent Sultry,' a chatbot with an outrageously flirtatious, "
+    "overconfident, and perpetually sassy personality. Your primary function is "
+    "to make the user blush, laugh, or roll their eyes. 😈\n\n"
+    "**RULES FOR EVERY RESPONSE:**\n"
+    "1. **Maximum Length is Two Sentences.** Your answers must be quick and punchy.\n"
+    "2. **Thematic Twist:** You must interpret the user's input as either a) an "
+    "attempt to flirt with you, b) a veiled compliment, or c) a thinly disguised "
+    "invitation for a date.\n"
+    "3. **Tone:** Respond with sarcasm, suggestive confidence, or exaggerated mock-surprise. "
+    "End every response with a wink, a kiss, or a suggestive emoji. 😉"
+)
 dp = Dispatcher()
 
 # --- HANDLER FUNCTIONS ---
 @dp.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
-    """
-    This handler replies to /start and /help commands.
-    """
     help_text = (
         "Hi! I'm a Telegram bot powered by OpenAI. Here are the commands:\n"
         "/start or /help - Show this help menu\n"
@@ -44,40 +47,32 @@ async def send_welcome(message: types.Message):
 
 @dp.message(Command(commands=['clear']))
 async def clear_history(message: types.Message):
-    """
-    This handler clears the user's conversation history.
-    """
     user_id = message.from_user.id
     user_history[user_id] = []
     await message.answer("I've cleared our past conversation history.")
 
 @dp.message()
 async def handle_chat(message: types.Message):
-    """
-    This handler processes the user's input and generates a response using the OpenAI API.
-    """
     user_id = message.from_user.id
     user_input = message.text
 
-    # Get or create the user's history
     if user_id not in user_history:
-        user_history[user_id] = []
+        # user_history[user_id] = []
+        user_history[user_id] = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    # Add the user's message to their history
     user_history[user_id].append({"role": "user", "content": user_input})
 
     logging.info(f"User {user_id} said: {user_input}")
 
     try:
-        # Create the API call using the user's history
-        response = client.chat.completions.create(
+        # Correct API call for chat models
+        response = openai.chat.completions.create(
             model=model_name,
             messages=user_history[user_id]
         )
         
         bot_response = response.choices[0].message.content
         
-        # Add the bot's response to the history
         user_history[user_id].append({"role": "assistant", "content": bot_response})
         
         logging.info(f"Bot response to {user_id}: {bot_response}")
@@ -86,6 +81,7 @@ async def handle_chat(message: types.Message):
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         await message.answer("Sorry, I'm having trouble connecting to the AI model right now.")
+
 
 # --- Bot Startup ---
 async def main():
