@@ -23,15 +23,21 @@ The bot is designed as a foundation for AI-powered conversational assistants on 
 - asyncio
 
 ## Project Structure
-.
 ├── main.py                         # Main bot logic and event loop
+
 ├── test.py                         # Testing and experimentation
+
 ├── requirements.txt                # Python dependencies
+
 ├── system_prompt_examples.txt      # Prompt configuration examples
+
 ├── research/
-│   └── echo_bot.py                 # Reference / experimental bot
+└── echo_bot.py                 # Reference / experimental bot
+
 ├── LICENSE
+
 └── README.md
+
 
 ## Setup Instructions
 
@@ -78,3 +84,4 @@ The bot will start polling and responding to messages on Telegram.
 
 ## License
 This project is licensed under the MIT License.
+
